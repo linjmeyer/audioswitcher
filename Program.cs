@@ -1,6 +1,7 @@
 ﻿using AudioSwitcher.AudioApi.CoreAudio;
 using System;
 using System.Collections.Generic;
+using System.IO;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
@@ -9,15 +10,53 @@ namespace AudioSwitcher
 {
     internal class Program
     {
+        private static CoreAudioController _controller = new CoreAudioController();
         static void Main(string[] args)
         {
-            var controller = new CoreAudioController();
-            var headSetGuid = Guid.Parse("{2fcd7156-328a-41ba-acf3-af2fc42544f3}");
-            var speakerGuid = Guid.Parse("{9e87ac79-80a6-4f81-9db8-cf619002cefc}");
-            var headSetDevice = controller.GetDevice(headSetGuid);
-            var speakerDevice = controller.GetDevice(speakerGuid);
+            // Get devices we toggle between 
+            var ids = GetDeviceTxtIds();
+            if (ids == null || ids.Length == 0) return;
 
-            controller.DefaultPlaybackDevice = controller.DefaultPlaybackDevice == headSetDevice ? speakerDevice : headSetDevice;
+            // Find the current Id, toggle to next one in devices.txt (order is important)
+            var currentId = _controller.DefaultPlaybackDevice.Id;
+            var toggleToNext = false;
+            var wasToggled = false;
+            foreach(var id in ids)
+            {
+                if (toggleToNext)
+                {
+                    SetDevice(id);
+                    wasToggled = true;
+                    break;
+                }
+
+                if (id == currentId)
+                {
+                    toggleToNext = true;
+                    continue;
+                }
+            }
+
+            // If we never toggled, set to first device (current device is last in list)
+            if (toggleToNext && !wasToggled) SetDevice(ids.First());
+        }
+
+        private static void SetDevice(Guid id)
+        {
+            _controller.DefaultPlaybackDevice = _controller.GetDevice(id);
+            Console.WriteLine($"Set playback device: {_controller.DefaultPlaybackDevice.Name}");
+        }
+
+        private static Guid[] GetDeviceTxtIds()
+        {
+            var guids = new List<Guid>();
+            var rawIds = File.ReadAllLines("devices.txt");
+            foreach(var rawId in rawIds)
+            {
+                if (string.IsNullOrWhiteSpace(rawId)) continue;
+                guids.Add(Guid.Parse(rawId));  
+            }
+            return guids.ToArray();
         }
     }
 }

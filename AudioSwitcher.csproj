@@ -57,4 +57,11 @@
     <None Include="packages.config" />
   </ItemGroup>
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
+
+    <ItemGroup>
+	    <ContentWithTargetPath Include="devices.txt">
+		    <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+		    <TargetPath>%(Filename)%(Extension)</TargetPath>
+	    </ContentWithTargetPath>
+    </ItemGroup>
 </Project>
