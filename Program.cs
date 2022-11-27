@@ -13,6 +13,12 @@ namespace AudioSwitcher
         private static CoreAudioController _controller = new CoreAudioController();
         static void Main(string[] args)
         {
+            // Get all devices and print to console so they can be put in devices.txt
+            var allDevices = _controller.GetPlaybackDevices();
+            foreach (var device in allDevices)
+            {
+                Console.WriteLine($"{device.FullName}: {device.Id}");
+            }
             // Get devices we toggle between 
             var ids = GetDeviceTxtIds();
             if (ids == null || ids.Length == 0) return;
