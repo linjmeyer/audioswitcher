@@ -3,8 +3,6 @@ using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
 
 namespace AudioSwitcher
 {
@@ -20,23 +18,23 @@ namespace AudioSwitcher
                 Console.WriteLine($"{device.FullName}: {device.Id}");
             }
             // Get devices we toggle between 
-            var ids = GetDeviceTxtIds();
-            if (ids == null || ids.Length == 0) return;
+            var names = GetDeviceNames();
+            if (names == null || names.Length == 0) return;
 
             // Find the current Id, toggle to next one in devices.txt (order is important)
-            var currentId = _controller.DefaultPlaybackDevice.Id;
+            var currentName = _controller.DefaultPlaybackDevice.FullName;
             var toggleToNext = false;
             var wasToggled = false;
-            foreach(var id in ids)
+            foreach(var targetName in names)
             {
                 if (toggleToNext)
                 {
-                    SetDevice(id);
+                    SetDevice(targetName);
                     wasToggled = true;
                     break;
                 }
 
-                if (id == currentId)
+                if (currentName == targetName)
                 {
                     toggleToNext = true;
                     continue;
@@ -44,25 +42,20 @@ namespace AudioSwitcher
             }
 
             // If we never toggled, set to first device (current device is last in list)
-            if (toggleToNext && !wasToggled) SetDevice(ids.First());
+            if (!wasToggled) SetDevice(names.First());
         }
 
-        private static void SetDevice(Guid id)
+        private static void SetDevice(string name)
         {
-            _controller.DefaultPlaybackDevice = _controller.GetDevice(id);
+            var toggleToDevice = _controller.GetPlaybackDevices().FirstOrDefault(x => x.FullName == name);
+            if (toggleToDevice == null) throw new Exception($"Could not find device named {name}");
+            _controller.DefaultPlaybackDevice = _controller.GetDevice(toggleToDevice.Id);
             Console.WriteLine($"Set playback device: {_controller.DefaultPlaybackDevice.Name}");
         }
 
-        private static Guid[] GetDeviceTxtIds()
-        {
-            var guids = new List<Guid>();
-            var rawIds = File.ReadAllLines("devices.txt");
-            foreach(var rawId in rawIds)
-            {
-                if (string.IsNullOrWhiteSpace(rawId)) continue;
-                guids.Add(Guid.Parse(rawId));  
-            }
-            return guids.ToArray();
+        private static string[] GetDeviceNames()
+        { 
+            return File.ReadAllLines("devices.txt");
         }
     }
 }
